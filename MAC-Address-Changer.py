@@ -2,6 +2,7 @@
 
 import subprocess #module used to call commands
 import optparse #module allows accepting command line arguments
+import re #allows for use of regular expressions
 
 def get_arguments():
     parser = optparse.OptionParser()
@@ -21,7 +22,7 @@ def get_arguments():
     return options
 
 def change_mac(interface, new_mac):
-    print("changing " + interface + " to " + new_mac)
+    print("Changing " + interface + " to " + new_mac)
 
     #subprocess executes the commands
     #each word in the list is a single word in the command (prevents command injection)
@@ -30,10 +31,27 @@ def change_mac(interface, new_mac):
     subprocess.call(["ifconfig", interface, "hw", "ether", new_mac])
     subprocess.call(["ifconfig", interface, "up"])
 
+def get_interface_mac(interface):
+    ifconfig_result = subprocess.check_output(["ifconfig", options.interface])
+    result_mac = re.search("\w\w:\w\w:\w\w:\w\w:\w\w:\w\w", str(ifconfig_result))
+    if result_mac:
+        return result_mac.group(0)
+    else:
+        print("[-] Could not read MAC address")
+
 options = get_arguments()
+
+curr_mac = get_interface_mac(options.interface)
+print("Current MAC: " + str(curr_mac))
+
 change_mac(options.interface,options.new_mac)
 
-subprocess.call(["ifconfig"])
+current_mac = get_interface_mac(options.interface)
+
+if options.new_mac == current_mac:
+    print("[+] MAC address was successfully changed to " + options.new_mac)
+else:
+    print("[-] MAC address change failure")
 
 
 
